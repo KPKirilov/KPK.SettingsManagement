@@ -1,16 +1,240 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace SettingsManagement
+﻿namespace SettingsManagement
 {
+    using SettingsManagement.Options;
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Linq;
+    using System.Reflection;
+    using System.Text.Json;
+
     public class SettingsManager<T>
-        where T: 
-            ISettings, 
+        where T :
+            ISettings,
             new()
     {
+        public static readonly string DefaultSettingsFileRelativePath;
+        private SettingsManagerOptions options;
+
+        static SettingsManager()
+        {
+            SettingsManager<T>.DefaultSettingsFileRelativePath = Path.Join("Settings", "Settings.json");
+        }
+
+        public SettingsManager()
+            : this(new SettingsManagerOptions())
+        {
+        }
+
+        public SettingsManager(SettingsManagerOptions options)
+        {
+            this.options = options;
+            this.Settings = this.GetNewDefaultSettingsInstance();
+            this.SettingsFileAbsolutePath = this.GetDefaultSettingsFileAbsolutePath();
+        }
+
         public T Settings { get; private set; }
+
+        public string SettingsFileAbsolutePath { get; set; }
+
+        private string SettingsFileDirectory
+        {
+            get
+            {
+                return Path.GetDirectoryName(this.SettingsFileAbsolutePath);
+            }
+        }
+
+        public void Load()
+        {
+            if (!File.Exists(SettingsFileAbsolutePath))
+            {
+                switch (this.options.ActionOnMissingFile)
+                {
+                    case ActionOnMissingFileOnLoad.CreateFileWithDefaultSettings:
+                        this.CreateNewFileWithDefaultSettings();
+                        break;
+                    case ActionOnMissingFileOnLoad.None:
+                        break;
+                    case ActionOnMissingFileOnLoad.Throw:
+                        throw new FileNotFoundException($"The source file for the settings was not found. Exception is thrown because {nameof(ActionOnMissingFileOnLoad)} is set to {nameof(ActionOnMissingFileOnLoad.Throw)}", SettingsFileAbsolutePath);
+                    default:
+                        break;
+                }
+            }
+
+            string jsonString = File.ReadAllText(this.SettingsFileAbsolutePath);
+            try
+            {
+                T settingsFromFile = JsonSerializer.Deserialize<T>(jsonString);
+                this.CopySettingsFromObject(settingsFromFile);
+            }
+            catch (Exception)
+            {
+                switch (this.options.ActionOnFailedJsonDeserialization)
+                {
+                    case ActionOnFailedJsonDeserialization.RenameOldFileAndCreateNewWithDefaultSettings:
+                        string newNameForOldFile = this.GetAbsoluteNameForBrokenOldFile();
+                        File.Move(this.SettingsFileAbsolutePath, newNameForOldFile);
+                        this.CreateNewFileWithDefaultSettings();
+                        this.Load();
+                        break;
+                    case ActionOnFailedJsonDeserialization.OverwriteOldFileWithDefaultSettings:
+                        this.CreateNewFileWithDefaultSettings();
+                        this.Load();
+                        break;
+                    case ActionOnFailedJsonDeserialization.Throw:
+                        throw;
+                    default:
+                        throw;
+                }
+            }
+        }
+
+        public void Save()
+        {
+            this.Save(this.Settings);
+        }
+
+        public T GetCopy()
+        {
+            var copy = this.GetNewDefaultSettingsInstance();
+            this.MapProperties(this.Settings, copy);
+            return copy;
+        }
+
+        public void CopySettingsFromObject(T settingsObjectToCopyFrom)
+        {
+            this.MapProperties(settingsObjectToCopyFrom, this.Settings);
+        }
+
+        public string GetSettingsJsonString()
+        {
+            return this.GetSettingsJsonString(this.Settings);
+        }
+
+        public T GetNewDefaultSettingsInstance()
+        {
+            var result = Activator.CreateInstance<T>();
+            result.SetToDefault();
+            return result;
+        }
+
+        protected string GetAbsoluteNameForBrokenOldFile()
+        {
+            DateTime now = DateTime.Now;
+            string timeStamp = $"{now:yyyy-MM-dd-hh-mm-ss}";
+            string settingsFileNameNoExtension =
+                    Path.GetFileNameWithoutExtension(this.SettingsFileAbsolutePath);
+            string settingsFileExtension = Path.GetExtension(this.SettingsFileAbsolutePath);
+
+            int iterations = 1;
+            while (true)
+            {
+                string iterationsStamp = iterations.ToString();
+                if (iterations == 1)
+                {
+                    iterationsStamp = string.Empty;
+                }
+
+                string fileName = $"OLD-{settingsFileNameNoExtension}-{timeStamp}-{iterationsStamp}{settingsFileExtension}";
+                string filePath = Path.Combine(this.SettingsFileDirectory, fileName);
+                if (!File.Exists(fileName))
+                {
+                    return filePath;
+                }
+
+                iterations++;
+            }
+        }
+
+        protected void MapProperties(T sourceObject, T targetObject)
+        {
+            Type type = typeof(T);
+            List<PropertyInfo> propertiesToMap = type
+                .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                .ToList();
+
+            foreach (var p in propertiesToMap)
+            {
+                var getMethod = p.GetGetMethod();
+                if (getMethod == null || !getMethod.IsPublic)
+                {
+                    continue;
+                }
+
+                var setMethod = p.GetSetMethod();
+                if (setMethod == null || !setMethod.IsPublic)
+                {
+                    continue;
+                }
+
+                object value = p.GetValue(sourceObject);
+                p.SetValue(targetObject, value);
+            }
+        }
+
+        protected string GetDefaultSettingsFileAbsolutePath()
+        {
+            string referenceAssemblyDirectory = string.Empty;
+            string referenceAssemblyPath = string.Empty;
+            switch (options.ReferencePoint)
+            {
+                case SettingsFilePathReferencePoint.CallingAssembly:
+                    referenceAssemblyPath = Assembly.GetCallingAssembly().Location;
+                    referenceAssemblyDirectory = Path.GetDirectoryName(referenceAssemblyPath);
+                    break;
+                case SettingsFilePathReferencePoint.ExecutingAssembly:
+                    referenceAssemblyPath = Assembly.GetExecutingAssembly().Location;
+                    referenceAssemblyDirectory = Path.GetDirectoryName(referenceAssemblyPath);
+                    break;
+                default:
+                    break;
+            }
+
+            string result = Path.Join(
+                referenceAssemblyDirectory,
+                SettingsManager<T>.DefaultSettingsFileRelativePath);
+            return result;
+        }
+
+        private void Save(T settings)
+        {
+            try
+            {
+                string jsonString = this.GetSettingsJsonString(settings);
+
+                if (!Directory.Exists(this.SettingsFileDirectory))
+                {
+                    Directory.CreateDirectory(this.SettingsFileDirectory);
+                }
+
+                File.WriteAllText(this.SettingsFileAbsolutePath, jsonString);
+            }
+            catch (Exception)
+            {
+                if (this.options.ShouldThrowOnFailedToSave)
+                {
+                    throw;
+                }
+            }
+        }
+
+        private string GetSettingsJsonString(T settings)
+        {
+            var options = new JsonSerializerOptions
+            {
+                WriteIndented = true,
+            };
+
+            string jsonString = JsonSerializer.Serialize<T>(settings, options);
+            return jsonString;
+        }
+        
+        private void CreateNewFileWithDefaultSettings()
+        {
+            T defaultSettings = this.GetNewDefaultSettingsInstance();
+            this.Save(defaultSettings);
+        }
     }
 }
