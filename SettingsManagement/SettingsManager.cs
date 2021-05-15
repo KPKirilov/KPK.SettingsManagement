@@ -33,7 +33,7 @@
             this.SettingsFileAbsolutePath = this.GetDefaultSettingsFileAbsolutePath();
         }
 
-        public T Settings { get; private set; }
+        public T Settings { get; protected set; }
 
         public string SettingsFileAbsolutePath { get; set; }
 
