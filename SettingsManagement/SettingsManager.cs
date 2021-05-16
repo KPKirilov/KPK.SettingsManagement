@@ -7,6 +7,7 @@
     using System.Linq;
     using System.Reflection;
     using System.Text.Json;
+    using System.Text.Json.Serialization;
 
     public class SettingsManager<T>
         where T :
@@ -33,7 +34,7 @@
             this.SettingsFileAbsolutePath = this.GetDefaultSettingsFileAbsolutePath();
         }
 
-        public T Settings { get; private set; }
+        public T Settings { get; protected set; }
 
         public string SettingsFileAbsolutePath { get; set; }
 
@@ -225,6 +226,7 @@
             var options = new JsonSerializerOptions
             {
                 WriteIndented = true,
+                ReferenceHandler = ReferenceHandler.Preserve,
             };
 
             string jsonString = JsonSerializer.Serialize<T>(settings, options);
