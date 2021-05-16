@@ -12,9 +12,9 @@
         {
         }
 
-        public new string GetAbsoluteNameForBrokenOldFile()
+        public new string GetNewNameForFileToBeOverwritten(string originalFileName)
         {
-            return base.GetAbsoluteNameForBrokenOldFile();
+            return base.GetNewNameForFileToBeOverwritten(originalFileName);
         }
 
         public new void MapProperties(T sourceObject, T targetObject)
