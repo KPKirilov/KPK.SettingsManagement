@@ -6,7 +6,7 @@
 
     public class MapPropertiesShould
     {
-        public SettingsManagerExposer<Settings1> SettingsManager { get; set; }
+        public SettingsManagerExposer<ValidSettings> SettingsManager { get; set; }
 
         [SetUp]
         public void Setup()
@@ -23,12 +23,12 @@
         public void MapPublicPropertiesWithPublicGettersAndSetters()
         {
             int mappedInt = 1;
-            Settings1 s1 = new()
+            ValidSettings s1 = new()
             {
                 PublicIntProperty = mappedInt,
             };
 
-            Settings1 s2 = new();
+            ValidSettings s2 = new();
 
             this.SettingsManager.MapProperties(s1, s2);
             Assert.AreEqual(mappedInt, s2.PublicIntProperty);
@@ -38,12 +38,12 @@
         public void NotMapInternalProperties()
         {
             int mappedInt = 1;
-            Settings1 s1 = new()
+            ValidSettings s1 = new()
             {
                 InternalIntProperty = mappedInt,
             };
 
-            Settings1 s2 = new();
+            ValidSettings s2 = new();
 
             this.SettingsManager.MapProperties(s1, s2);
             Assert.AreNotEqual(mappedInt, s2.InternalIntProperty);
@@ -53,12 +53,12 @@
         public void NotMapPublicPropertiesWithNonPublicGetters()
         {
             int mappedInt = 1;
-            Settings1 s1 = new()
+            ValidSettings s1 = new()
             {
                 PublicIntPropertyInternalGetter = mappedInt,
             };
 
-            Settings1 s2 = new();
+            ValidSettings s2 = new();
 
             this.SettingsManager.MapProperties(s1, s2);
             Assert.AreNotEqual(mappedInt, s2.PublicIntPropertyInternalGetter);
@@ -68,12 +68,12 @@
         public void NotMapPublicPropertiesWithNonPublicSetters()
         {
             int mappedInt = 1;
-            Settings1 s1 = new()
+            ValidSettings s1 = new()
             {
                 PublicIntPropertyInternalSetter = mappedInt,
             };
 
-            Settings1 s2 = new();
+            ValidSettings s2 = new();
 
             this.SettingsManager.MapProperties(s1, s2);
             Assert.AreNotEqual(mappedInt, s2.PublicIntPropertyInternalSetter);

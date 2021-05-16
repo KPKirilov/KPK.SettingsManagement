@@ -68,7 +68,7 @@
             }
         }
 
-        private string SettingsFileDirectory
+        public string SettingsFileDirectory
         {
             get
             {
