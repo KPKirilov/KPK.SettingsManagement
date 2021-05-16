@@ -15,7 +15,6 @@
             new()
     {
         public static readonly string DefaultSettingsFileRelativePath;
-        private SettingsManagerOptions options;
 
         static SettingsManager()
         {
@@ -23,15 +22,13 @@
         }
 
         public SettingsManager()
-            : this(new SettingsManagerOptions())
         {
-        }
-
-        public SettingsManager(SettingsManagerOptions options)
-        {
-            this.options = options;
             this.Settings = this.GetNewDefaultSettingsInstance();
             this.SettingsFileAbsolutePath = this.GetDefaultSettingsFileAbsolutePath();
+            this.ActionOnMissingFileOnLoad = ActionOnMissingFileOnLoad.CreateFileWithDefaultSettings;
+            this.SettingsFilePathReferencePoint = SettingsFilePathReferencePoint.CallingAssembly;
+            this.ActionOnFailedJsonDeserialization = ActionOnFailedJsonDeserialization.OverwriteOldFileWithDefaultSettings;
+            this.ShouldThrowOnFailedToSave = true;
         }
 
         public T Settings { get; protected set; }
@@ -46,11 +43,19 @@
             }
         }
 
+        public ActionOnMissingFileOnLoad ActionOnMissingFileOnLoad { get; set; }
+
+        public SettingsFilePathReferencePoint SettingsFilePathReferencePoint { get; set; }
+
+        public ActionOnFailedJsonDeserialization ActionOnFailedJsonDeserialization { get; set; }
+
+        public bool ShouldThrowOnFailedToSave { get; set; }
+
         public void Load()
         {
             if (!File.Exists(SettingsFileAbsolutePath))
             {
-                switch (this.options.ActionOnMissingFile)
+                switch (this.ActionOnMissingFileOnLoad)
                 {
                     case ActionOnMissingFileOnLoad.CreateFileWithDefaultSettings:
                         this.CreateNewFileWithDefaultSettings();
@@ -72,7 +77,7 @@
             }
             catch (Exception)
             {
-                switch (this.options.ActionOnFailedJsonDeserialization)
+                switch (this.ActionOnFailedJsonDeserialization)
                 {
                     case ActionOnFailedJsonDeserialization.RenameOldFileAndCreateNewWithDefaultSettings:
                         string newNameForOldFile = this.GetAbsoluteNameForBrokenOldFile();
@@ -179,7 +184,7 @@
         {
             string referenceAssemblyDirectory = string.Empty;
             string referenceAssemblyPath = string.Empty;
-            switch (options.ReferencePoint)
+            switch (this.SettingsFilePathReferencePoint)
             {
                 case SettingsFilePathReferencePoint.CallingAssembly:
                     referenceAssemblyPath = Assembly.GetCallingAssembly().Location;
@@ -214,7 +219,7 @@
             }
             catch (Exception)
             {
-                if (this.options.ShouldThrowOnFailedToSave)
+                if (this.ShouldThrowOnFailedToSave)
                 {
                     throw;
                 }

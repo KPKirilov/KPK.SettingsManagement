@@ -8,12 +8,7 @@
             new()
     {
         public SettingsManagerExposer()
-            : this(new SettingsManagerOptions())
-        {
-        }
-
-        public SettingsManagerExposer(SettingsManagerOptions options)
-            : base(options)
+            : base()
         {
         }
 
