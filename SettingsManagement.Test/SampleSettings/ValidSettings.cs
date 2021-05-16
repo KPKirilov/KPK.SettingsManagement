@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace SettingsManagement.Test.SampleSettings
 {
-    public class Settings1 : ISettings
+    public class ValidSettings : ISettings
     {
-        public Settings1()
+        public ValidSettings()
         {
             this.SetToDefault();
         }
