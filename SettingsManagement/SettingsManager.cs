@@ -125,7 +125,7 @@
                 switch (this.ActionOnFailedJsonDeserialization)
                 {
                     case ActionOnFailedJsonDeserialization.RenameOldFileAndCreateNewWithDefaultSettings:
-                        string newNameForOldFile = this.GetAbsoluteNameForBrokenOldFile();
+                        string newNameForOldFile = this.GetNewNameForFileToBeOverwritten(this.SettingsFileAbsolutePath);
                         File.Move(this.SettingsFileAbsolutePath, newNameForOldFile);
                         this.CreateNewFileWithDefaultSettings();
                         this.Load();
@@ -171,26 +171,27 @@
             return result;
         }
 
-        protected string GetAbsoluteNameForBrokenOldFile()
+        protected string GetNewNameForFileToBeOverwritten(string originalFileName)
         {
             DateTime now = DateTime.Now;
             string timeStamp = $"{now:yyyy-MM-dd-hh-mm-ss}";
-            string settingsFileNameNoExtension =
-                    Path.GetFileNameWithoutExtension(this.SettingsFileAbsolutePath);
-            string settingsFileExtension = Path.GetExtension(this.SettingsFileAbsolutePath);
+            string fileNameNoExtension =
+                    Path.GetFileNameWithoutExtension(originalFileName);
+            string fileExtension = Path.GetExtension(originalFileName);
+            string directory = Path.GetDirectoryName(originalFileName);
 
             int iterations = 1;
             while (true)
             {
-                string iterationsStamp = iterations.ToString();
+                string iterationsStamp = $"-{iterations}";
                 if (iterations == 1)
                 {
                     iterationsStamp = string.Empty;
                 }
 
-                string fileName = $"OLD-{settingsFileNameNoExtension}-{timeStamp}-{iterationsStamp}{settingsFileExtension}";
-                string filePath = Path.Combine(this.SettingsFileDirectory, fileName);
-                if (!File.Exists(fileName))
+                string fileName = $"OLD-{fileNameNoExtension}-{timeStamp}{iterationsStamp}{fileExtension}";
+                string filePath = Path.Combine(directory, fileName);
+                if (!File.Exists(filePath))
                 {
                     return filePath;
                 }
