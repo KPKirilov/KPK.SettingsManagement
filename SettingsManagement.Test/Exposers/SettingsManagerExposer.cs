@@ -22,9 +22,9 @@
             base.MapProperties(sourceObject, targetObject);
         }
 
-        public new string GetDefaultSettingsFileAbsolutePath()
+        public new void UpdateSettingsFileAbsolutePathIfStandard()
         {
-            return base.GetDefaultSettingsFileAbsolutePath();
+            base.UpdateSettingsFileAbsolutePathIfStandard();
         }
     }
 }
