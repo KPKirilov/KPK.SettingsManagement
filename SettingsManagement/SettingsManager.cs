@@ -15,7 +15,9 @@
             new()
     {
         public static readonly string DefaultSettingsFileRelativePath;
-        private SettingsManagerOptions options;
+        private SettingsFilePathReferencePoint settingsFilePathReferencePoint;
+        private string settingsFileAbsolutePath;
+        private string settingsFileRelativePathFromStandardReferencePoints;
 
         static SettingsManager()
         {
@@ -23,20 +25,48 @@
         }
 
         public SettingsManager()
-            : this(new SettingsManagerOptions())
         {
-        }
-
-        public SettingsManager(SettingsManagerOptions options)
-        {
-            this.options = options;
             this.Settings = this.GetNewDefaultSettingsInstance();
-            this.SettingsFileAbsolutePath = this.GetDefaultSettingsFileAbsolutePath();
+            this.ActionOnMissingFileOnLoad = ActionOnMissingFileOnLoad.CreateFileWithDefaultSettings;
+            this.ActionOnFailedJsonDeserialization = ActionOnFailedJsonDeserialization.OverwriteOldFileWithDefaultSettings;
+            this.ShouldThrowOnFailedToSave = true;
+
+            // Synced properties. Order matters. 
+            this.settingsFileRelativePathFromStandardReferencePoints 
+                = SettingsManager<T>.DefaultSettingsFileRelativePath;
+            this.settingsFilePathReferencePoint = SettingsFilePathReferencePoint.CallingAssembly;
+            this.UpdateSettingsFileAbsolutePathIfStandard();
         }
 
         public T Settings { get; protected set; }
 
-        public string SettingsFileAbsolutePath { get; set; }
+        public string SettingsFileAbsolutePath 
+        {
+            get
+            {
+                return this.settingsFileAbsolutePath;
+            }
+
+            set
+            {
+                this.settingsFileAbsolutePath = value;
+                this.settingsFilePathReferencePoint = SettingsFilePathReferencePoint.Custom;
+            }
+        }
+
+        public string SettingsFileRelativePathFromStandardReferencePoints
+        {
+            get
+            {
+                return this.settingsFileRelativePathFromStandardReferencePoints;
+            }
+
+            set
+            {
+                this.settingsFileRelativePathFromStandardReferencePoints = value;
+                this.UpdateSettingsFileAbsolutePathIfStandard();
+            }
+        }
 
         private string SettingsFileDirectory
         {
@@ -46,11 +76,31 @@
             }
         }
 
+        public ActionOnMissingFileOnLoad ActionOnMissingFileOnLoad { get; set; }
+
+        public SettingsFilePathReferencePoint SettingsFilePathReferencePoint
+        {
+            get
+            {
+                return this.settingsFilePathReferencePoint;
+            }
+
+            set
+            {
+                this.settingsFilePathReferencePoint = value;
+                this.UpdateSettingsFileAbsolutePathIfStandard();
+            }
+        }
+
+        public ActionOnFailedJsonDeserialization ActionOnFailedJsonDeserialization { get; set; }
+
+        public bool ShouldThrowOnFailedToSave { get; set; }
+
         public void Load()
         {
             if (!File.Exists(SettingsFileAbsolutePath))
             {
-                switch (this.options.ActionOnMissingFile)
+                switch (this.ActionOnMissingFileOnLoad)
                 {
                     case ActionOnMissingFileOnLoad.CreateFileWithDefaultSettings:
                         this.CreateNewFileWithDefaultSettings();
@@ -72,7 +122,7 @@
             }
             catch (Exception)
             {
-                switch (this.options.ActionOnFailedJsonDeserialization)
+                switch (this.ActionOnFailedJsonDeserialization)
                 {
                     case ActionOnFailedJsonDeserialization.RenameOldFileAndCreateNewWithDefaultSettings:
                         string newNameForOldFile = this.GetAbsoluteNameForBrokenOldFile();
@@ -175,28 +225,29 @@
             }
         }
 
-        protected string GetDefaultSettingsFileAbsolutePath()
+        protected void UpdateSettingsFileAbsolutePathIfStandard()
         {
-            string referenceAssemblyDirectory = string.Empty;
-            string referenceAssemblyPath = string.Empty;
-            switch (options.ReferencePoint)
+            Assembly referenceAssembly;
+            switch (this.settingsFilePathReferencePoint)
             {
                 case SettingsFilePathReferencePoint.CallingAssembly:
-                    referenceAssemblyPath = Assembly.GetCallingAssembly().Location;
-                    referenceAssemblyDirectory = Path.GetDirectoryName(referenceAssemblyPath);
+                    referenceAssembly = Assembly.GetCallingAssembly();
                     break;
                 case SettingsFilePathReferencePoint.ExecutingAssembly:
-                    referenceAssemblyPath = Assembly.GetExecutingAssembly().Location;
-                    referenceAssemblyDirectory = Path.GetDirectoryName(referenceAssemblyPath);
+                    referenceAssembly = Assembly.GetExecutingAssembly();
                     break;
+                case SettingsFilePathReferencePoint.Custom:
+                    return;
                 default:
                     break;
             }
 
-            string result = Path.Join(
+            string referenceAssemblyPath = Assembly.GetCallingAssembly().Location;
+            string referenceAssemblyDirectory = Path.GetDirectoryName(referenceAssemblyPath);
+
+            this.settingsFileAbsolutePath = Path.Join(
                 referenceAssemblyDirectory,
-                SettingsManager<T>.DefaultSettingsFileRelativePath);
-            return result;
+                this.settingsFileRelativePathFromStandardReferencePoints);
         }
 
         private void Save(T settings)
@@ -214,7 +265,7 @@
             }
             catch (Exception)
             {
-                if (this.options.ShouldThrowOnFailedToSave)
+                if (this.ShouldThrowOnFailedToSave)
                 {
                     throw;
                 }
@@ -232,7 +283,7 @@
             string jsonString = JsonSerializer.Serialize<T>(settings, options);
             return jsonString;
         }
-        
+
         private void CreateNewFileWithDefaultSettings()
         {
             T defaultSettings = this.GetNewDefaultSettingsInstance();

@@ -8,12 +8,7 @@
             new()
     {
         public SettingsManagerExposer()
-            : this(new SettingsManagerOptions())
-        {
-        }
-
-        public SettingsManagerExposer(SettingsManagerOptions options)
-            : base(options)
+            : base()
         {
         }
 
@@ -27,9 +22,9 @@
             base.MapProperties(sourceObject, targetObject);
         }
 
-        public new string GetDefaultSettingsFileAbsolutePath()
+        public new void UpdateSettingsFileAbsolutePathIfStandard()
         {
-            return base.GetDefaultSettingsFileAbsolutePath();
+            base.UpdateSettingsFileAbsolutePathIfStandard();
         }
     }
 }
