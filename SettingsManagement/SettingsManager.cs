@@ -15,9 +15,7 @@
             new()
     {
         public static readonly string DefaultSettingsFileRelativePath;
-        private SettingsFilePathReferencePoint settingsFilePathReferencePoint;
-        private string settingsFileAbsolutePath;
-        private string settingsFileRelativePathFromStandardReferencePoints;
+        private string settingsFileRelativePath;
 
         static SettingsManager()
         {
@@ -32,39 +30,26 @@
             this.ShouldThrowOnFailedToSave = true;
 
             // Synced properties. Order matters. 
-            this.settingsFileRelativePathFromStandardReferencePoints 
+            this.settingsFileRelativePath 
                 = SettingsManager<T>.DefaultSettingsFileRelativePath;
-            this.settingsFilePathReferencePoint = SettingsFilePathReferencePoint.CallingAssembly;
-            this.UpdateSettingsFileAbsolutePathIfStandard();
+            this.UpdateSettingsFileAbsolutePath();
         }
 
         public T Settings { get; protected set; }
 
-        public string SettingsFileAbsolutePath 
+        public string SettingsFileAbsolutePath { get; set; }
+
+        public string SettingsFileRelativePath
         {
             get
             {
-                return this.settingsFileAbsolutePath;
+                return this.settingsFileRelativePath;
             }
 
             set
             {
-                this.settingsFileAbsolutePath = value;
-                this.settingsFilePathReferencePoint = SettingsFilePathReferencePoint.Custom;
-            }
-        }
-
-        public string SettingsFileRelativePathFromStandardReferencePoints
-        {
-            get
-            {
-                return this.settingsFileRelativePathFromStandardReferencePoints;
-            }
-
-            set
-            {
-                this.settingsFileRelativePathFromStandardReferencePoints = value;
-                this.UpdateSettingsFileAbsolutePathIfStandard();
+                this.settingsFileRelativePath = value;
+                this.UpdateSettingsFileAbsolutePath();
             }
         }
 
@@ -77,20 +62,6 @@
         }
 
         public ActionOnMissingFileOnLoad ActionOnMissingFileOnLoad { get; set; }
-
-        public SettingsFilePathReferencePoint SettingsFilePathReferencePoint
-        {
-            get
-            {
-                return this.settingsFilePathReferencePoint;
-            }
-
-            set
-            {
-                this.settingsFilePathReferencePoint = value;
-                this.UpdateSettingsFileAbsolutePathIfStandard();
-            }
-        }
 
         public ActionOnFailedJsonDeserialization ActionOnFailedJsonDeserialization { get; set; }
 
@@ -226,29 +197,13 @@
             }
         }
 
-        protected void UpdateSettingsFileAbsolutePathIfStandard()
+        protected void UpdateSettingsFileAbsolutePath()
         {
-            Assembly referenceAssembly;
-            switch (this.settingsFilePathReferencePoint)
-            {
-                case SettingsFilePathReferencePoint.CallingAssembly:
-                    referenceAssembly = Assembly.GetCallingAssembly();
-                    break;
-                case SettingsFilePathReferencePoint.ExecutingAssembly:
-                    referenceAssembly = Assembly.GetExecutingAssembly();
-                    break;
-                case SettingsFilePathReferencePoint.Custom:
-                    return;
-                default:
-                    break;
-            }
+            var referenceAssemblyDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 
-            string referenceAssemblyPath = Assembly.GetCallingAssembly().Location;
-            string referenceAssemblyDirectory = Path.GetDirectoryName(referenceAssemblyPath);
-
-            this.settingsFileAbsolutePath = Path.Join(
+            this.SettingsFileAbsolutePath = Path.Join(
                 referenceAssemblyDirectory,
-                this.settingsFileRelativePathFromStandardReferencePoints);
+                this.settingsFileRelativePath);
         }
 
         private void Save(T settings)

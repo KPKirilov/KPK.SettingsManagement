@@ -21,10 +21,5 @@
         {
             base.MapProperties(sourceObject, targetObject);
         }
-
-        public new void UpdateSettingsFileAbsolutePathIfStandard()
-        {
-            base.UpdateSettingsFileAbsolutePathIfStandard();
-        }
     }
 }
