@@ -1,6 +1,7 @@
 ﻿namespace SettingsManagement
 {
     using SettingsManagement.Options;
+    using SettingsManagement.Serialization;
     using System;
     using System.Collections.Generic;
     using System.IO;
@@ -22,18 +23,31 @@
             SettingsManager<T>.DefaultSettingsFileRelativePath = Path.Join("Settings", "Settings.json");
         }
 
+
         public SettingsManager()
+            : this(null)
         {
+        }
+
+        public SettingsManager(ISerializer<T> serializer)
+        {
+            if (serializer == default(ISerializer<T>))
+            {
+                serializer = new NewtonsoftJsonSerializer<T>();
+            }
+
+            this.Serializer = serializer;
             this.Settings = this.GetNewDefaultSettingsInstance();
             this.ActionOnMissingFileOnLoad = ActionOnMissingFileOnLoad.CreateFileWithDefaultSettings;
             this.ActionOnFailedJsonDeserialization = ActionOnFailedJsonDeserialization.OverwriteOldFileWithDefaultSettings;
             this.ShouldThrowOnFailedToSave = true;
 
             // Synced properties. Order matters. 
-            this.settingsFileRelativePath 
+            this.settingsFileRelativePath
                 = SettingsManager<T>.DefaultSettingsFileRelativePath;
             this.UpdateSettingsFileAbsolutePath();
         }
+
 
         public T Settings { get; protected set; }
 
@@ -67,6 +81,8 @@
 
         public bool ShouldThrowOnFailedToSave { get; set; }
 
+        protected ISerializer<T> Serializer { get; set; }
+
         public void Load()
         {
             if (!File.Exists(SettingsFileAbsolutePath))
@@ -85,10 +101,10 @@
                 }
             }
 
-            string jsonString = File.ReadAllText(this.SettingsFileAbsolutePath);
+            byte[] bytesFromFile = File.ReadAllBytes(this.SettingsFileAbsolutePath);
             try
             {
-                T settingsFromFile = JsonSerializer.Deserialize<T>(jsonString);
+                T settingsFromFile = this.Serializer.Deserialize(bytesFromFile);
                 this.CopySettingsFromObject(settingsFromFile);
             }
             catch (Exception)
@@ -130,15 +146,21 @@
             this.MapProperties(settingsObjectToCopyFrom, this.Settings);
         }
 
-        public string GetSettingsJsonString()
-        {
-            return this.GetSettingsJsonString(this.Settings);
-        }
-
         public T GetNewDefaultSettingsInstance()
         {
             var result = Activator.CreateInstance<T>();
             result.SetToDefault();
+            return result;
+        }
+
+        public byte[] GetSerializedSettings()
+        {
+            return this.GetSerializedSettings(this.Settings);
+        }
+
+        public byte[] GetSerializedSettings(T settings)
+        {
+            byte[] result = this.Serializer.Serialize(settings);
             return result;
         }
 
@@ -210,14 +232,14 @@
         {
             try
             {
-                string jsonString = this.GetSettingsJsonString(settings);
+                byte[] bytes = this.Serializer.Serialize(settings);
 
                 if (!Directory.Exists(this.SettingsFileDirectory))
                 {
                     Directory.CreateDirectory(this.SettingsFileDirectory);
                 }
 
-                File.WriteAllText(this.SettingsFileAbsolutePath, jsonString);
+                File.WriteAllBytes(this.SettingsFileAbsolutePath, bytes);
             }
             catch (Exception)
             {
@@ -226,18 +248,6 @@
                     throw;
                 }
             }
-        }
-
-        private string GetSettingsJsonString(T settings)
-        {
-            var options = new JsonSerializerOptions
-            {
-                WriteIndented = true,
-                ReferenceHandler = ReferenceHandler.Preserve,
-            };
-
-            string jsonString = JsonSerializer.Serialize<T>(settings, options);
-            return jsonString;
         }
 
         private void CreateNewFileWithDefaultSettings()
