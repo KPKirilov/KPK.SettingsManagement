@@ -7,8 +7,6 @@
     using System.IO;
     using System.Linq;
     using System.Reflection;
-    using System.Text.Json;
-    using System.Text.Json.Serialization;
 
     public class SettingsManager<T>
         where T :
@@ -39,7 +37,7 @@
             this.Serializer = serializer;
             this.Settings = this.GetNewDefaultSettingsInstance();
             this.ActionOnMissingFileOnLoad = ActionOnMissingFileOnLoad.CreateFileWithDefaultSettings;
-            this.ActionOnFailedJsonDeserialization = ActionOnFailedJsonDeserialization.OverwriteOldFileWithDefaultSettings;
+            this.ActionOnFailedDeserialization = ActionOnFailedDeserialization.OverwriteOldFileWithDefaultSettings;
             this.ShouldThrowOnFailedToSave = true;
 
             // Synced properties. Order matters. 
@@ -77,7 +75,7 @@
 
         public ActionOnMissingFileOnLoad ActionOnMissingFileOnLoad { get; set; }
 
-        public ActionOnFailedJsonDeserialization ActionOnFailedJsonDeserialization { get; set; }
+        public ActionOnFailedDeserialization ActionOnFailedDeserialization { get; set; }
 
         public bool ShouldThrowOnFailedToSave { get; set; }
 
@@ -91,8 +89,6 @@
                 {
                     case ActionOnMissingFileOnLoad.CreateFileWithDefaultSettings:
                         this.CreateNewFileWithDefaultSettings();
-                        break;
-                    case ActionOnMissingFileOnLoad.None:
                         break;
                     case ActionOnMissingFileOnLoad.Throw:
                         throw new FileNotFoundException($"The source file for the settings was not found. Exception is thrown because {nameof(ActionOnMissingFileOnLoad)} is set to {nameof(ActionOnMissingFileOnLoad.Throw)}", SettingsFileAbsolutePath);
@@ -109,19 +105,19 @@
             }
             catch (Exception)
             {
-                switch (this.ActionOnFailedJsonDeserialization)
+                switch (this.ActionOnFailedDeserialization)
                 {
-                    case ActionOnFailedJsonDeserialization.RenameOldFileAndCreateNewWithDefaultSettings:
+                    case ActionOnFailedDeserialization.RenameOldFileAndCreateNewWithDefaultSettings:
                         string newNameForOldFile = this.GetNewNameForFileToBeOverwritten(this.SettingsFileAbsolutePath);
                         File.Move(this.SettingsFileAbsolutePath, newNameForOldFile);
                         this.CreateNewFileWithDefaultSettings();
                         this.Load();
                         break;
-                    case ActionOnFailedJsonDeserialization.OverwriteOldFileWithDefaultSettings:
+                    case ActionOnFailedDeserialization.OverwriteOldFileWithDefaultSettings:
                         this.CreateNewFileWithDefaultSettings();
                         this.Load();
                         break;
-                    case ActionOnFailedJsonDeserialization.Throw:
+                    case ActionOnFailedDeserialization.Throw:
                         throw;
                     default:
                         throw;
