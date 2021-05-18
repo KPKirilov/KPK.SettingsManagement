@@ -1,6 +1,6 @@
 ﻿namespace SettingsManagement.Options
 {
-    public enum ActionOnFailedJsonDeserialization
+    public enum ActionOnFailedDeserialization
     {
         RenameOldFileAndCreateNewWithDefaultSettings = 0,
         OverwriteOldFileWithDefaultSettings = 1,

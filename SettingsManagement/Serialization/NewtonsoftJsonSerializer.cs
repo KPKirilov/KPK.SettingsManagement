@@ -26,6 +26,7 @@
             JsonSerializerSettings serializerSettings = new()
             {
                 MissingMemberHandling = MissingMemberHandling.Error,
+                ReferenceLoopHandling = ReferenceLoopHandling.Serialize,
             };
 
             return serializerSettings;
