@@ -8,12 +8,20 @@
     using System.Linq;
     using System.Reflection;
 
+    /// <summary>
+    /// Provides functionality to handle settings.
+    /// </summary>
+    /// <typeparam name="T">The type of the settings.</typeparam>
     public class SettingsManager<T>
         where T :
             ISettings,
             new()
     {
+        /// <summary>
+        /// The default relative path for the settings file.
+        /// </summary>
         public static readonly string DefaultSettingsFileRelativePath;
+
         private string settingsFileRelativePath;
 
         static SettingsManager()
@@ -22,11 +30,18 @@
         }
 
 
+        /// <summary>
+        /// Initializes a new instance of the SettingsManager class using a NewtonsoftJsonSerializer.
+        /// </summary>
         public SettingsManager()
             : this(null)
         {
         }
 
+        /// <summary>
+        /// Initializes a new instance of the SettingsManager class using a provided serializer.
+        /// </summary>
+        /// <param name="serializer">The serializer to use.</param>
         public SettingsManager(ISerializer<T> serializer)
         {
             if (serializer == default(ISerializer<T>))
@@ -46,11 +61,19 @@
             this.UpdateSettingsFileAbsolutePath();
         }
 
-
+        /// <summary>
+        /// Gets the managed settings object.
+        /// </summary>
         public T Settings { get; protected set; }
 
+        /// <summary>
+        /// The absolute path to the settings file. Gets updated by setting <cref>SettingsFileRelativePath</cref>.
+        /// </summary>
         public string SettingsFileAbsolutePath { get; set; }
 
+        /// <summary>
+        /// The relative path to the settings file. Setting this property updates <cref>SettingsFileAbsolutePath</cref>.
+        /// </summary>
         public string SettingsFileRelativePath
         {
             get
@@ -65,6 +88,9 @@
             }
         }
 
+        /// <summary>
+        /// Gets the directory of the settings file. Is a product of <cref>SettingsFileAbsolutePath</cref>.
+        /// </summary>
         public string SettingsFileDirectory
         {
             get
@@ -73,14 +99,29 @@
             }
         }
 
+        /// <summary>
+        /// Gets or sets what action should be taken when trying to load a missing file
+        /// </summary>
         public ActionOnMissingFileOnLoad ActionOnMissingFileOnLoad { get; set; }
 
+        /// <summary>
+        /// Gets or sets what action should be taken when a deserialization fails.
+        /// </summary>
         public ActionOnFailedDeserialization ActionOnFailedDeserialization { get; set; }
 
+        /// <summary>
+        /// Gets or sets a value indicating whether or not the manager should throw an exception if it fails to save the settings file.
+        /// </summary>
         public bool ShouldThrowOnFailedToSave { get; set; }
 
+        /// <summary>
+        /// Gets or sets the used serializer.
+        /// </summary>
         protected ISerializer<T> Serializer { get; set; }
 
+        /// <summary>
+        /// Loads the settings file.
+        /// </summary
         public void Load()
         {
             if (!File.Exists(SettingsFileAbsolutePath))
@@ -125,11 +166,18 @@
             }
         }
 
+        /// <summary>
+        /// Saves the settings file.
+        /// </summary>
         public void Save()
         {
             this.Save(this.Settings);
         }
 
+        /// <summary>
+        /// Gets a copy of the settings object.
+        /// </summary>
+        /// <returns>The copy of the settings object.</returns>
         public T GetCopy()
         {
             var copy = this.GetNewDefaultSettingsInstance();
@@ -137,11 +185,19 @@
             return copy;
         }
 
+        /// <summary>
+        /// Copies the properties from the provided object to the managed Settings object.
+        /// </summary>
+        /// <param name="settingsObjectToCopyFrom">Object to copy from.</param>
         public void CopySettingsFromObject(T settingsObjectToCopyFrom)
         {
             this.MapProperties(settingsObjectToCopyFrom, this.Settings);
         }
 
+        /// <summary>
+        /// Gets new settings object with default properties.
+        /// </summary>
+        /// <returns>A default settings object.</returns>
         public T GetNewDefaultSettingsInstance()
         {
             var result = Activator.CreateInstance<T>();
@@ -149,17 +205,31 @@
             return result;
         }
 
+        /// <summary>
+        /// Gets a byte array that represents the managed settings object.
+        /// </summary>
+        /// <returns>The serialized object.</returns>
         public byte[] GetSerializedSettings()
         {
             return this.GetSerializedSettings(this.Settings);
         }
 
+        /// <summary>
+        /// Gets a byte array that represents a settings object.
+        /// </summary>
+        /// <param name="settings">The settings object to be serialized.</param>
+        /// <returns>The serialized settings object.</returns>
         public byte[] GetSerializedSettings(T settings)
         {
             byte[] result = this.Serializer.Serialize(settings);
             return result;
         }
 
+        /// <summary>
+        /// Gets a file name which is not taken.
+        /// </summary>
+        /// <param name="originalFileName">The file name of the original file.</param>
+        /// <returns>The file name.</returns>
         protected string GetNewNameForFileToBeOverwritten(string originalFileName)
         {
             DateTime now = DateTime.Now;
@@ -189,6 +259,11 @@
             }
         }
 
+        /// <summary>
+        /// Maps the properties from one object to another.
+        /// </summary>
+        /// <param name="sourceObject">The source object.</param>
+        /// <param name="targetObject">The target object.</param>
         protected void MapProperties(T sourceObject, T targetObject)
         {
             Type type = typeof(T);
@@ -215,6 +290,9 @@
             }
         }
 
+        /// <summary>
+        /// Updates SettingsFileAbsolutePath.
+        /// </summary>
         protected void UpdateSettingsFileAbsolutePath()
         {
             var referenceAssemblyDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
