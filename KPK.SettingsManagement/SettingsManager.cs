@@ -13,7 +13,7 @@
     /// Provides functionality to handle settings.
     /// </summary>
     /// <typeparam name="T">The type of the settings.</typeparam>
-    public class SettingsManager<T>
+    public class SettingsManager<T> : ISettingsManager<T>
         where T :
             ISettings,
             new()
