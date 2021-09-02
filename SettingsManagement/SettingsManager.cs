@@ -1,5 +1,6 @@
 ﻿namespace SettingsManagement
 {
+    using SettingsManagement.Exceptions;
     using SettingsManagement.Options;
     using SettingsManagement.Serialization;
     using System;
@@ -67,12 +68,12 @@
         public T Settings { get; protected set; }
 
         /// <summary>
-        /// The absolute path to the settings file. Gets updated by setting <cref>SettingsFileRelativePath</cref>.
+        /// The absolute path to the settings file. Gets updated by setting <see cref="SettingsFileRelativePath"/>.
         /// </summary>
         public string SettingsFileAbsolutePath { get; set; }
 
         /// <summary>
-        /// The relative path to the settings file. Setting this property updates <cref>SettingsFileAbsolutePath</cref>.
+        /// The relative path to the settings file. Setting this property updates <see cref="SettingsFileAbsolutePath"/>.
         /// </summary>
         public string SettingsFileRelativePath
         {
@@ -89,7 +90,7 @@
         }
 
         /// <summary>
-        /// Gets the directory of the settings file. Is a product of <cref>SettingsFileAbsolutePath</cref>.
+        /// Gets the directory of the settings file. Is a product of <see cref="SettingsFileAbsolutePath"/>.
         /// </summary>
         public string SettingsFileDirectory
         {
@@ -120,49 +121,67 @@
         protected ISerializer<T> Serializer { get; set; }
 
         /// <summary>
-        /// Loads the settings file.
+        /// Loads the settings file from the path provided in SettingsFileAbsolutePath.
         /// </summary
         public void Load()
         {
-            if (!File.Exists(SettingsFileAbsolutePath))
-            {
-                switch (this.ActionOnMissingFileOnLoad)
-                {
-                    case ActionOnMissingFileOnLoad.CreateFileWithDefaultSettings:
-                        this.CreateNewFileWithDefaultSettings();
-                        break;
-                    case ActionOnMissingFileOnLoad.Throw:
-                        throw new FileNotFoundException($"The source file for the settings was not found. Exception is thrown because {nameof(ActionOnMissingFileOnLoad)} is set to {nameof(ActionOnMissingFileOnLoad.Throw)}", SettingsFileAbsolutePath);
-                    default:
-                        break;
-                }
-            }
-
-            byte[] bytesFromFile = File.ReadAllBytes(this.SettingsFileAbsolutePath);
             try
             {
-                T settingsFromFile = this.Serializer.Deserialize(bytesFromFile);
-                this.CopySettingsFromObject(settingsFromFile);
-            }
-            catch (Exception)
-            {
-                switch (this.ActionOnFailedDeserialization)
+                if (!File.Exists(SettingsFileAbsolutePath))
                 {
-                    case ActionOnFailedDeserialization.RenameOldFileAndCreateNewWithDefaultSettings:
-                        string newNameForOldFile = this.GetNewNameForFileToBeOverwritten(this.SettingsFileAbsolutePath);
-                        File.Move(this.SettingsFileAbsolutePath, newNameForOldFile);
-                        this.CreateNewFileWithDefaultSettings();
-                        this.Load();
-                        break;
-                    case ActionOnFailedDeserialization.OverwriteOldFileWithDefaultSettings:
-                        this.CreateNewFileWithDefaultSettings();
-                        this.Load();
-                        break;
-                    case ActionOnFailedDeserialization.Throw:
-                        throw;
-                    default:
-                        throw;
+                    switch (this.ActionOnMissingFileOnLoad)
+                    {
+                        case ActionOnMissingFileOnLoad.CreateFileWithDefaultSettings:
+                            this.CreateNewFileWithDefaultSettings();
+                            break;
+                        case ActionOnMissingFileOnLoad.Throw:
+                            throw new FileNotFoundException($"The source file for the settings was not found. Exception is thrown because {nameof(ActionOnMissingFileOnLoad)} is set to {nameof(ActionOnMissingFileOnLoad.Throw)}", SettingsFileAbsolutePath);
+                        default:
+                            break;
+                    }
                 }
+
+                byte[] bytesFromFile = File.ReadAllBytes(this.SettingsFileAbsolutePath);
+                try
+                {
+                    T settingsFromFile = this.Deserialize(bytesFromFile);
+                    this.CopySettingsFromObject(settingsFromFile);
+                }
+                catch (Exception)
+                {
+                    switch (this.ActionOnFailedDeserialization)
+                    {
+                        case ActionOnFailedDeserialization.RenameOldFileAndCreateNewWithDefaultSettings:
+                            string newNameForOldFile = this.GetNewNameForFileToBeOverwritten(this.SettingsFileAbsolutePath);
+                            File.Move(this.SettingsFileAbsolutePath, newNameForOldFile);
+                            this.CreateNewFileWithDefaultSettings();
+                            this.Load();
+                            break;
+                        case ActionOnFailedDeserialization.OverwriteOldFileWithDefaultSettings:
+                            this.CreateNewFileWithDefaultSettings();
+                            this.Load();
+                            break;
+                        case ActionOnFailedDeserialization.Throw:
+                            throw;
+                        default:
+                            throw;
+                    }
+                }
+            }
+            catch (Exception exc) when(
+                exc is IOException
+                || exc is ArgumentException
+                || exc is ArgumentNullException
+                || exc is PathTooLongException
+                || exc is DirectoryNotFoundException
+                || exc is NotSupportedException
+                || exc is UnauthorizedAccessException
+                || exc is System.Security.SecurityException
+                || exc is FileNotFoundException
+                || this.ShouldThrowOnFailedToSave)
+            {
+                throw new SettingsFileAccessException("A settings file access exception occured. " +
+                    "See inner exception for more details", exc);
             }
         }
 
@@ -221,7 +240,7 @@
         /// <returns>The serialized settings object.</returns>
         public byte[] GetSerializedSettings(T settings)
         {
-            byte[] result = this.Serializer.Serialize(settings);
+            byte[] result = this.Serialize(settings);
             return result;
         }
 
@@ -306,7 +325,7 @@
         {
             try
             {
-                byte[] bytes = this.Serializer.Serialize(settings);
+                byte[] bytes = this.Serialize(settings);
 
                 if (!Directory.Exists(this.SettingsFileDirectory))
                 {
@@ -328,6 +347,32 @@
         {
             T defaultSettings = this.GetNewDefaultSettingsInstance();
             this.Save(defaultSettings);
+        }
+
+        private byte[] Serialize(T settings)
+        {
+            try
+            {
+                return this.Serializer.Serialize(settings);
+            }
+            catch (Exception exc)
+            {
+                throw new SerializerException("A serialization exception occured. " +
+                    "See inner exception for more details", exc);
+            }
+        }
+
+        private T Deserialize(byte[] bytes)
+        {
+            try
+            {
+                return this.Serializer.Deserialize(bytes);
+            }
+            catch (Exception exc)
+            {
+                throw new SerializerException("A serialization exception occured. " +
+                    "See inner exception for more details", exc);
+            }
         }
     }
 }
