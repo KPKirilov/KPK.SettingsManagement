@@ -13,7 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SettingsManagement\SettingsManagement.csproj" />
+    <ProjectReference Include="..\KPK.SettingsManagement\KPK.SettingsManagement.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,4 +1,4 @@
-﻿namespace SettingsManagement.Serialization
+﻿namespace KPK.SettingsManagement.Serialization
 {
     /// <summary>
     /// Defines members for a serializer.

@@ -1,6 +1,6 @@
-﻿namespace SettingsManagement.Test.Exposers
+﻿namespace KPK.SettingsManagement.Test.Exposers
 {
-    using SettingsManagement.Options;
+    using KPK.SettingsManagement.Options;
 
     public class SettingsManagerExposer<T>: SettingsManager<T>
         where T :

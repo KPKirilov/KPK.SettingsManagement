@@ -1,5 +1,5 @@
 ﻿using NUnit.Framework;
-using SettingsManagement.Test.SampleSettings;
+using KPK.SettingsManagement.Test.SampleSettings;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -8,10 +8,11 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
-using SettingsManagement.Options;
-using SettingsManagement.Serialization;
+using KPK.SettingsManagement.Options;
+using KPK.SettingsManagement.Serialization;
+using KPK.SettingsManagement.Exceptions;
 
-namespace SettingsManagement.Test.SettingsManager
+namespace KPK.SettingsManagement.Test.SettingsManager
 {
     public class LoadShould
     {
@@ -101,9 +102,12 @@ namespace SettingsManagement.Test.SettingsManager
                 this.settingsManager.Load();
                 Assert.Fail();
             }
-            catch (FileNotFoundException)
+            catch (SettingsFileAccessException exc)
             {
-                Assert.Pass();
+                if (exc.InnerException.GetType() == typeof(FileNotFoundException))
+                {
+                    Assert.Pass();
+                }
             }
 
             Assert.Fail();
