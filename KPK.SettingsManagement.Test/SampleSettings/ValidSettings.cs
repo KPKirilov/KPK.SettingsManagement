@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SettingsManagement.Test.SampleSettings
+namespace KPK.SettingsManagement.Test.SampleSettings
 {
     public class ValidSettings : ISettings
     {

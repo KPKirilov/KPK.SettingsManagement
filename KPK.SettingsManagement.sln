@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.31129.286
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SettingsManagement", "SettingsManagement\SettingsManagement.csproj", "{5542A01C-5E64-46D1-9B82-D83EA41016F6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KPK.SettingsManagement", "KPK.SettingsManagement\KPK.SettingsManagement.csproj", "{5542A01C-5E64-46D1-9B82-D83EA41016F6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SettingsManagement.Test", "SettingsManagement.Test\SettingsManagement.Test.csproj", "{F349A588-71AE-4D42-8964-5C8E776ABBE0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KPK.SettingsManagement.Test", "KPK.SettingsManagement.Test\KPK.SettingsManagement.Test.csproj", "{F349A588-71AE-4D42-8964-5C8E776ABBE0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

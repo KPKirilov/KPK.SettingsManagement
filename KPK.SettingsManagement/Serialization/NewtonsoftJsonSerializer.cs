@@ -1,4 +1,4 @@
-﻿namespace SettingsManagement.Serialization
+﻿namespace KPK.SettingsManagement.Serialization
 {
     using Newtonsoft.Json;
     using System.Text;

@@ -1,4 +1,4 @@
-﻿namespace SettingsManagement.Options
+﻿namespace KPK.SettingsManagement.Options
 {
     /// <summary>
     /// Enum indicating what action should be taken when a deserialization fails.

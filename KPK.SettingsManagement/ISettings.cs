@@ -1,4 +1,4 @@
-﻿namespace SettingsManagement
+﻿namespace KPK.SettingsManagement
 {
     /// <summary>
     /// Represents a settings object.

@@ -1,8 +1,8 @@
-﻿namespace SettingsManagement
+﻿namespace KPK.SettingsManagement
 {
-    using SettingsManagement.Exceptions;
-    using SettingsManagement.Options;
-    using SettingsManagement.Serialization;
+    using KPK.SettingsManagement.Exceptions;
+    using KPK.SettingsManagement.Options;
+    using KPK.SettingsManagement.Serialization;
     using System;
     using System.Collections.Generic;
     using System.IO;
@@ -169,16 +169,16 @@
                 }
             }
             catch (Exception exc) when(
-                exc is IOException
-                || exc is ArgumentException
-                || exc is ArgumentNullException
-                || exc is PathTooLongException
-                || exc is DirectoryNotFoundException
-                || exc is NotSupportedException
-                || exc is UnauthorizedAccessException
-                || exc is System.Security.SecurityException
-                || exc is FileNotFoundException
-                || this.ShouldThrowOnFailedToSave)
+                this.ShouldThrowOnFailedToSave
+                && (exc is IOException
+                    || exc is ArgumentException
+                    || exc is ArgumentNullException
+                    || exc is PathTooLongException
+                    || exc is DirectoryNotFoundException
+                    || exc is NotSupportedException
+                    || exc is UnauthorizedAccessException
+                    || exc is System.Security.SecurityException
+                    || exc is FileNotFoundException))
             {
                 throw new SettingsFileAccessException("A settings file access exception occured. " +
                     "See inner exception for more details", exc);

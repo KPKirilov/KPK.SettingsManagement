@@ -1,8 +1,8 @@
-﻿namespace SettingsManagement.Test.SettingsManager
+﻿namespace KPK.SettingsManagement.Test.SettingsManager
 {
     using NUnit.Framework;
-    using SettingsManagement.Test.Exposers;
-    using SettingsManagement.Test.SampleSettings;
+    using KPK.SettingsManagement.Test.Exposers;
+    using KPK.SettingsManagement.Test.SampleSettings;
 
     public class MapPropertiesShould
     {
